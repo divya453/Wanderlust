@@ -16,7 +16,7 @@
        </div>
          <div class="mb-3">
             <label for="image" class="form-label">Image URL/Link</label>
-          <input name="listing[image]" value="<%= listing.image %>" type="text" class="form-control">
+          <input name="listing[image]" value="<%= listing.image %>" type="text" class="form-control" required>
          </div>
 
           <div class="row">
@@ -28,6 +28,7 @@
              <div class="mb-3 col-md-8">
                 <label for="Country" class="form-label">Country</label>
                 <input name = "listing[country]" value="<%= listing.country %>" type="text" class="form-control" required>
+                <div class="invalid-feedback">Please enter the Country</div>
             </div>
          </div>
          
@@ -38,7 +39,8 @@
         </div>
 
          <button class="btn btn-dark edit-btn mt-3">Edit</button>
-         <br>
+        
      </form>
  </div>
 </div>
+<script src="/js/script.js"></script>
