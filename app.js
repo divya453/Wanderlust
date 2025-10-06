@@ -10,6 +10,8 @@ const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { listingSchema, reviewSchema } = require("./schema.js");
 const Review = require("./models/review.js");
+const review = require("./models/review.js");
+const { error } = require("console");
 
 
 main().then(()=>{
@@ -104,7 +106,7 @@ app.delete("/listings/:id", wrapAsync(async(req, res)=>{
 }));
 
 //review route 
-//post
+//post review route
 app.post("/listings/:id/reviews", validateReview, wrapAsync(async (req, res)=>{
    let listing = await Listing.findById(req.params.id);
    let newReview = new Review(req.body.review);
@@ -117,13 +119,25 @@ app.post("/listings/:id/reviews", validateReview, wrapAsync(async (req, res)=>{
 
 }));
 
+//delete review route
+app.delete("/listings/:id/reviews/:reviewId", wrapAsync(async (req,res)=>{
+     let { id, reviewId} = req.params;
+     await Listing.findByIdAndUpdate(id, { $pull : {review : reviewId}});
+     await Review.findByIdAndDelete(reviewId);
+
+     res.redirect(`/listings/${id}`);
+
+
+}));
+
 app.use((req, res, next)=>{
     next(new ExpressError(404, "Page Not Found!"));
 });
 
 app.use((err, req, res, next)=>{
     let { statusCode = 500, message = "Something went Wrong!" } = err;
-    res.status(statusCode).send(message);
+    res.status(statusCode).render("error.ejs", {err});
+    // res.status(statusCode).send(message);
 });
 
 app.listen("8080", (req, res)=>{
