@@ -8,7 +8,8 @@ const ejsMate = require("ejs-mate");
 const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
 const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
-const { listingSchema } = require("./schema.js");
+const { listingSchema, reviewSchema } = require("./schema.js");
+const Review = require("./models/review.js");
 
 
 main().then(()=>{
@@ -39,7 +40,19 @@ const validateListing = (req, res, next) =>{
         next();
       }
      
-}
+};
+
+
+const validateReview = (req, res, next) =>{
+   let { error} = reviewSchema.validate(req.body);
+      if (error) {
+        let errMsg = error.details.map((el) => el.message).join(",");
+        throw new ExpressError(400, errMsg);
+      } else{
+        next();
+      }
+     
+};
 //index route 
 app.get("/listings", wrapAsync(async (req, res) =>{
  const allListings = await Listing.find({});
@@ -54,7 +67,7 @@ app.get("/listings/new" ,(req, res)=>{
 //show route
 app.get("/listings/:id", wrapAsync(async (req, res)=>{
     let { id } = req.params;
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findById(id).populate("reviews");
     res.render("listings/show.ejs", {listing});
 }));
 
@@ -81,6 +94,7 @@ app.put("/listings/:id", validateListing, wrapAsync(async(req, res)=>{
      await Listing.findByIdAndUpdate(id, {...req.body.listing});
      res.redirect(`/listings/${id}`);
 }));
+
 //Delete route
 app.delete("/listings/:id", wrapAsync(async(req, res)=>{
     let { id } = req.params;
@@ -89,13 +103,29 @@ app.delete("/listings/:id", wrapAsync(async(req, res)=>{
      res.redirect("/listings")
 }));
 
+//review route 
+//post
+app.post("/listings/:id/reviews", validateReview, wrapAsync(async (req, res)=>{
+   let listing = await Listing.findById(req.params.id);
+   let newReview = new Review(req.body.review);
+
+   listing.reviews.push(newReview);
+    await newReview.save();
+    await listing.save();
+   
+    res.redirect(`/listings/${listing._id}`);
+
+}));
+
 app.use((req, res, next)=>{
     next(new ExpressError(404, "Page Not Found!"));
 });
+
 app.use((err, req, res, next)=>{
     let { statusCode = 500, message = "Something went Wrong!" } = err;
     res.status(statusCode).send(message);
 });
+
 app.listen("8080", (req, res)=>{
     console.log("server is listening on port 8080");
 });
